@@ -14,7 +14,7 @@ public class Transaction {
         return "Transaction{" +
                 "from='" + from + '\'' +
                 ", to='" + to + '\'' +
-                ", amount=" + amount +
+                ", amount=" + (int)amount +
                 '}';
     }
 }
