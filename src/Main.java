@@ -4,21 +4,49 @@ import java.util.Collection;
 import java.util.Scanner;
 
 public class Main {
-    static private ArrayList<Transaction> calculate (String[] names, Payment[] payments){
+
+    static private Person[] sumPayments (Payment[] payments, Person[] persons) {
+        for (Payment payment : payments){
+            for (Person person : persons){
+                if (payment.getPayer().equals(person.getName())){
+                    person.setAmount(person.getAmount() + payment.getAmount());
+                }
+            }
+        }
+        return persons;
+    }
+
+    static private Person[] getPersonalDebts (String[] names, Payment[] payments) {
         Person[] persons = new Person[names.length];
-        for (int i = 0; i < persons.length; i++){
+        for (int i = 0; i < persons.length; i++) {
             persons[i] = new Person(names[i], 0.0);
         }
         persons = sumPayments(payments, persons);
         double total = 0.0;
-        for (Payment payment : payments){
+        for (Payment payment : payments) {
             total += payment.getAmount();
         }
         double split = total / persons.length;
 
-        for (Person person : persons){
+        for (Person person : persons) {
             person.setAmount(person.getAmount() - split);
         }
+
+        return persons;
+    }
+
+    static private Person[] adjustSplit (Payment[] payments, Person[] persons){
+        for (Payment payment : payments){
+            for (Person person : persons){
+                if (payment.getPayer().equals(person.getName())){
+                    person.setAmount(person.getAmount() - payment.getAmount());
+                }
+            }
+        }
+        return persons;
+    }
+
+    static private ArrayList<Transaction> calculate (Person[] persons){
 
         Arrays.sort(persons, new Person.sortByAmount());
 
@@ -55,17 +83,6 @@ public class Main {
         return result;
     }
 
-    static private Person[] sumPayments (Payment[] payments, Person[] persons) {
-        for (Payment payment : payments){
-            for (Person person : persons){
-                if (payment.getPayer().equals(person.getName())){
-                    person.setAmount(person.getAmount() + payment.getAmount());
-                }
-            }
-        }
-        return persons;
-    }
-
     public static void main (String[] args) {
 //        Payment payment1 = new Payment("hzy", 100);
 //        Payment payment2 = new Payment("hzy", 288);
@@ -85,10 +102,9 @@ public class Main {
         Scanner input = new Scanner(System.in);
 
         System.out.println("Enter the payments, separate names and amount by space and payments by coma.");
-        System.out.println();
-        String paymentString = input.nextLine();
+        String paymentsString = input.nextLine();
 
-        String[] paymentsStrings = paymentString.split(",");
+        String[] paymentsStrings = paymentsString.split(",");
         Payment[] payments = new Payment[paymentsStrings.length];
 
         for (int i = 0; i < paymentsStrings.length; i++){
@@ -98,12 +114,50 @@ public class Main {
         }
 
         System.out.println("Enter the name of participants, separate by space.");
-        System.out.println();
         String nameString = input.nextLine();
 
         String[] names = nameString.split(" ");
 
-        ArrayList<Transaction> result = calculate(names, payments);
+        Person[] persons = getPersonalDebts(names, payments);
+
+        System.out.println("Is there any personal costs? (Y/N)");
+        char personalCostConfirm = input.nextLine().charAt(0);
+        if (personalCostConfirm == 'Y' || personalCostConfirm == 'y'){
+            System.out.println("Enter the additional costs, separate names and amount by space and payments by coma.");
+            String additionalCostsString = input.nextLine();
+            String[] additionalCostsStrings = additionalCostsString.split(",");
+            Payment[] additionalCosts = new Payment[additionalCostsStrings.length];
+
+            for (int i = 0; i < additionalCostsStrings.length; i++){
+                String[] fields = additionalCostsStrings[i].split(" ");
+                Payment payment = new Payment(fields[0], Double.parseDouble(fields[1]));
+                additionalCosts[i] = payment;
+            }
+
+            persons = adjustSplit(additionalCosts, persons);
+
+            System.out.println("Enter the additional payments, separate names and amount by space and payments by coma.");
+            String additionalPaymentsString = input.nextLine();
+            String[] additionalPaymentsStrings = additionalPaymentsString.split(",");
+
+            Payment[] additionalPayments = new Payment[additionalPaymentsStrings.length];
+
+            for (int i = 0; i < additionalPaymentsStrings.length; i++){
+                String[] fields = additionalPaymentsStrings[i].split(" ");
+                Payment payment = new Payment(fields[0], Double.parseDouble(fields[1]));
+                additionalPayments[i] = payment;
+            }
+
+            persons = sumPayments(additionalPayments, persons);
+        }
+        else if (personalCostConfirm == 'N' || personalCostConfirm == 'n') {
+
+        }
+        else {
+            System.out.println("Please enter a valid answer.");
+        }
+
+        ArrayList<Transaction> result = calculate(persons);
         for (Transaction transaction : result){
             System.out.println(transaction.toString());
         }
